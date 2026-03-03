@@ -5,9 +5,21 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                Text(statusText)
-                    .foregroundStyle(.secondary)
+            if !controller.isAccessibilityTrusted {
+                Button("Permission needed — tap to open Settings") {
+                    controller.openAccessibilitySettings()
+                }
+                .foregroundStyle(.red)
+            } else if !controller.isScreenRecordingTrusted {
+                Button("Permission needed — tap to open Settings") {
+                    controller.openScreenRecordingSettings()
+                }
+                .foregroundStyle(.red)
+            } else {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    Text(statusText)
+                        .foregroundStyle(.secondary)
+                }
             }
             Divider()
             Button("Quit Scry") {

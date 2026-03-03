@@ -22,29 +22,46 @@ private let eventTapCallback: CGEventTapCallBack = { _, type, event, refcon in
 
 final class CaptureController: ObservableObject {
     @Published var lastCopied: Date? = nil
+    @Published var isAccessibilityTrusted: Bool = false
+    @Published var isScreenRecordingTrusted: Bool = false
 
     private var captureProcess: Process?
     fileprivate var eventTap: CFMachPort?
     private var tapRunLoopSource: CFRunLoopSource?
     private var accessibilityTimer: Timer?
 
+    var hasAllPermissions: Bool { isAccessibilityTrusted && isScreenRecordingTrusted }
+
     init() {
         // Trigger Screen Recording prompt at launch rather than mid-capture
-        CGWindowListCreateImage(.zero, .optionOnScreenOnly, kCGNullWindowID, [])
+        let testImage = CGWindowListCreateImage(.zero, .optionOnScreenOnly, kCGNullWindowID, [])
+        isScreenRecordingTrusted = testImage != nil
 
         let trusted = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
         )
+        isAccessibilityTrusted = trusted
         if trusted {
             installEventTap()
         } else {
             accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-                guard let self, AXIsProcessTrusted() else { return }
+                guard let self else { return }
+                let nowTrusted = AXIsProcessTrusted()
+                DispatchQueue.main.async { self.isAccessibilityTrusted = nowTrusted }
+                guard nowTrusted else { return }
                 self.accessibilityTimer?.invalidate()
                 self.accessibilityTimer = nil
                 self.installEventTap()
             }
         }
+    }
+
+    func openAccessibilitySettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
+    }
+
+    func openScreenRecordingSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
     }
 
     private func installEventTap() {
