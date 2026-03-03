@@ -5,13 +5,6 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if controller.needsAccessibility {
-                Button("Grant Accessibility Access…") {
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-            }
             TimelineView(.periodic(from: .now, by: 1)) { _ in
                 Text(statusText)
                     .foregroundStyle(.secondary)

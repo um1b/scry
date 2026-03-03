@@ -22,7 +22,6 @@ private let eventTapCallback: CGEventTapCallBack = { _, type, event, refcon in
 
 final class CaptureController: ObservableObject {
     @Published var lastCopied: Date? = nil
-    @Published var needsAccessibility = false
 
     private var captureProcess: Process?
     fileprivate var eventTap: CFMachPort?
@@ -39,12 +38,10 @@ final class CaptureController: ObservableObject {
         if trusted {
             installEventTap()
         } else {
-            needsAccessibility = true
             accessibilityTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
                 guard let self, AXIsProcessTrusted() else { return }
                 self.accessibilityTimer?.invalidate()
                 self.accessibilityTimer = nil
-                self.needsAccessibility = false
                 self.installEventTap()
             }
         }
